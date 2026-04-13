@@ -26,6 +26,7 @@ services:
     envVars:
       # --- Geradas automaticamente pelo Blueprint ---
       - key: DATABASE_URL
+        value: ""
 
       # --- Configurar MANUALMENTE no painel do Render ---
       - key: NODE_ENV
@@ -84,16 +85,3 @@ services:
     # Configurações do Docker
     dockerCommand: npx prisma migrate deploy && node dist/server.js
 
-databases:
-  # ============================================================
-  # POSTGRESQL — Gerenciado pelo Render (Free Tier)
-  # ============================================================
-  - name: luvaria-postgres
-    databaseName: luvaria_db
-    user: luvaria
-    plan: free
-    region: oregon
-    # Nota: O plano free do Render PostgreSQL:
-    #   - 1 GB de armazenamento
-    #   - É apagado após 90 dias de inatividade
-    #   - Para produção permanente, considere Neon.tech ou Supabase
