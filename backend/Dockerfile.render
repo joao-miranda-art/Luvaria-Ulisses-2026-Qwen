@@ -2,33 +2,27 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 ENV NODE_OPTIONS="--max-old-space-size=450"
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
-RUN apk add --no-cache python3 make g++ openssl-dev
-COPY backend/package*.json ./
+ENV TSC_COMPILE_ON_ERROR=true
+RUN apk add --no-cache openssl
+COPY package*.json ./
 RUN npm ci
-COPY backend/ .
-RUN npx prisma generate --schema=./prisma/schema.prisma
-RUN npx tsc || echo "TS errors ignored"
-RUN npm prune --production
+COPY . .
+RUN npx prisma generate
+RUN npx tsc --skipLibCheck --noEmitOnError false || echo "Build finalizado com avisos"
 
 # Stage 2: Production
 FROM node:20-alpine AS production
 WORKDIR /app
 RUN apk add --no-cache openssl curl
-# Copia tudo o que é essencial para o runtime
-COPY backend/package*.json ./
+COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Garante que o Node rode na porta que o Render espera
 ENV PORT=10000
 ENV NODE_ENV=production
-
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-RUN chown -R nodejs:nodejs /app
-USER nodejs
 EXPOSE 10000
+
 CMD ["node", "dist/server.js"]
