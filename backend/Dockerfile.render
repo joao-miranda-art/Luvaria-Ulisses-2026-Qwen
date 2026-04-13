@@ -7,9 +7,7 @@ RUN apk add --no-cache python3 make g++ openssl-dev
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ .
-# Garantir que o Prisma gere o client apontando para o arquivo
 RUN npx prisma generate --schema=./prisma/schema.prisma
-# Build ignorando erros de TS (se houver) para testar o ambiente
 RUN npx tsc || echo "TS errors ignored"
 RUN npm prune --production
 
@@ -17,11 +15,18 @@ RUN npm prune --production
 FROM node:20-alpine AS production
 WORKDIR /app
 RUN apk add --no-cache openssl curl
+# Copia tudo o que é essencial para o runtime
 COPY backend/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Garante que o Node rode na porta que o Render espera
+ENV PORT=10000
+ENV NODE_ENV=production
+
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 RUN chown -R nodejs:nodejs /app
 USER nodejs
