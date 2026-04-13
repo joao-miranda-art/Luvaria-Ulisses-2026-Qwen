@@ -1,0 +1,157 @@
+version: '3.9'
+
+services:
+  # ============================================================
+  # PostgreSQL — Banco de dados principal
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: luvaria-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: luvaria
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luvaria_secure_pass_2026}
+      POSTGRES_DB: luvaria_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-5432}:5432"
+    networks:
+      - luvaria-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luvaria -d luvaria_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============================================================
+  # Redis — Cache, Rate Limiting, Filas
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: luvaria-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redis_secure_pass_2026}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    networks:
+      - luvaria-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass_2026}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # Backend — API Node.js
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: luvaria-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://luvaria:${POSTGRES_PASSWORD:-luvaria_secure_pass_2026}@postgres:5432/luvaria_db?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass_2026}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret_2026}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_jwt_refresh_secret_2026}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-luvaria-ulisses}
+      WEBHOOK_SECRET_N8N: ${WEBHOOK_SECRET_N8N:-change_me_webhook_secret}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/luvaria}
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "3001:3001"
+    networks:
+      - luvaria-internal
+      - luvaria-public
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================================================
+  # Frontend — Next.js 14
+  # ============================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: luvaria-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:3001
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_AWS_S3_BUCKET: ${AWS_S3_BUCKET:-luvaria-ulisses}
+      NEXT_PUBLIC_AWS_REGION: ${AWS_REGION:-us-east-1}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - luvaria-internal
+      - luvaria-public
+
+  # ============================================================
+  # Backup — Cron container para backups automáticos
+  # ============================================================
+  backup:
+    image: postgres:16-alpine
+    container_name: luvaria-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luvaria_secure_pass_2026}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backups:/backups
+      - ./infra/scripts:/scripts:ro
+    entrypoint: ["/scripts/backup-cron.sh"]
+    networks:
+      - luvaria-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  luvaria-internal:
+    internal: false
+    driver: bridge
+  luvaria-public:
+    driver: bridge

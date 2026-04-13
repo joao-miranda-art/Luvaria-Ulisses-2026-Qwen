@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Luvaria Ulisses 2026 — Estilos Globais
+   Paleta de luxo: Borgonha, Dourado, Couro, Creme
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --bg-primary: #FFFEF9; /* Creme muito suave */
+    --bg-secondary: #F5F0E8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --border-color: #E0D5C5;
+    --gold: #D4AF37;
+    --burgundy: #800020;
+  }
+
+  .dark {
+    --bg-primary: #0f0a08;
+    --bg-secondary: #1a1310;
+    --text-primary: #f5f0e8;
+    --text-secondary: #c4b8a8;
+    --border-color: #3d3028;
+    --gold: #D4AF37;
+    --burgundy: #a00030;
+  }
+
+  * {
+    @apply border-border-color;
+  }
+
+  body {
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  /* Botão primário — Dourado luxuoso */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           bg-accent-400 hover:bg-accent-500 
+           text-white font-medium text-sm
+           rounded-sm tracking-wide uppercase
+           transition-all duration-300 ease-out
+           hover:shadow-lg hover:shadow-accent-400/20
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Botão secundário — Outline elegante */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           border-2 border-accent-400 
+           text-accent-400 hover:bg-accent-400 hover:text-white
+           font-medium text-sm
+           rounded-sm tracking-wide uppercase
+           transition-all duration-300 ease-out
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Botão burgundy — Para ações importantes */
+  .btn-burgundy {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           bg-primary-800 hover:bg-primary-900 
+           text-white font-medium text-sm
+           rounded-sm tracking-wide uppercase
+           transition-all duration-300 ease-out
+           hover:shadow-lg hover:shadow-primary-800/20
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Card elegante */
+  .card-luxury {
+    @apply bg-white dark:bg-charcoal/90 
+           border border-[var(--border-color)] 
+           rounded-sm shadow-sm
+           transition-all duration-300
+           hover:shadow-md hover:border-accent-400/30;
+  }
+
+  /* Input elegante */
+  .input-luxury {
+    @apply w-full px-4 py-3 
+           bg-white dark:bg-charcoal/50 
+           border border-[var(--border-color)] 
+           rounded-sm
+           text-[var(--text-primary)]
+           placeholder-[var(--text-secondary)]/50
+           focus:outline-none focus:ring-2 focus:ring-accent-400/50 focus:border-accent-400
+           transition-all duration-200;
+  }
+
+  /* Seção com divisor elegante */
+  .section-divider {
+    @apply relative py-8;
+  }
+  
+  .section-divider::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 -translate-x-1/2 
+           w-24 h-px bg-gradient-to-r from-transparent via-accent-400 to-transparent;
+  }
+
+  /* Badge de status */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-pending { @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400; }
+  .badge-confirmed { @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400; }
+  .badge-cancelled { @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400; }
+  .badge-completed { @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400; }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Gradiente dourado sutil */
+  .bg-gold-gradient {
+    @apply bg-gradient-to-r from-accent-300 via-accent-400 to-accent-500;
+  }
+
+  /* Efeito de shimmer para loading */
+  .shimmer {
+    @apply bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%] animate-shimmer;
+  }
+}
