@@ -1,13 +1,14 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 WORKDIR /app
-# Limitar memória do Node para o build
-ENV NODE_OPTIONS="--max-old-space-size=400"
+ENV NODE_OPTIONS="--max-old-space-size=450"
+# Pular validação de banco do Prisma no build
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 RUN apk add --no-cache python3 make g++ openssl-dev
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ .
-# Gerar prisma antes do build
+# Gerar o client sem precisar do banco ativo
 RUN npx prisma generate
 RUN npm run build
 RUN npm prune --production
