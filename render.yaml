@@ -17,7 +17,6 @@ services:
   - type: web
     name: luvaria-backend
     runtime: docker
-    repo: https://github.com/SEU_USUARIO/luvaria-ulisses-2026-qwen
     dockerfilePath: ./backend/Dockerfile.render
     plan: free
     region: oregon
